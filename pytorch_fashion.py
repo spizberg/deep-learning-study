@@ -1,3 +1,6 @@
+
+""" Code to see PyTorch behaviour compared to Tensorflow """
+
 import numpy as np
 import torch
 from torch.utils.data import TensorDataset, DataLoader
@@ -39,18 +42,17 @@ val_dataset = TensorDataset(torch.tensor(val_set_data, requires_grad=False, dtyp
                             torch.as_tensor(val_set_targets))
 
 
-train_data_loader = DataLoader(train_dataset, batch_size=10, shuffle=True)
-val_data_loader = DataLoader(val_dataset, batch_size=10)
+train_data_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
+val_data_loader = DataLoader(val_dataset, batch_size=4)
 
 
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 16, 3)
+        self.conv1 = nn.Conv2d(1, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(16, 32, 3)
-        self.conv3 = nn.Conv2d(32, 64, 3)
-        self.fc1 = nn.Linear(576, 84)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16*4*4, 84)
         self.fc2 = nn.Linear(84, 10)
 
     def forward(self, x):
@@ -58,8 +60,7 @@ class Net(nn.Module):
         x = self.pool(x)
         x = F.relu(self.conv2(x))
         x = self.pool(x)
-        x = F.relu(self.conv3(x))
-        x = x.view(-1, 576)
+        x = x.view(-1, 16*4*4)
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         return x
@@ -72,14 +73,13 @@ model.to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = op.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
-for epoch in range(15):  # loop over the dataset multiple times
+for epoch in range(50):
 
     running_loss = 0.0
     for i, data in enumerate(train_data_loader):
-        # get the inputs; data is a list of [inputs, labels]
+
         inputs, labels = data[0].to(device), data[1].to(device)
 
-        # zero the parameter gradients
         optimizer.zero_grad()
 
         # forward + backward + optimize
@@ -88,8 +88,6 @@ for epoch in range(15):  # loop over the dataset multiple times
         loss.backward()
         optimizer.step()
 
-        # print statistics
-        #print("Les {} exemples".format(i+1)*500)
         running_loss += loss.item()
         print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss))
         running_loss = 0.0
